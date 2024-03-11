@@ -21,7 +21,7 @@ const fieldMap = {
   plan: 'Plan',
   warnings: 'Warnings',
   arm_cycle: 'Arm Cycle',
-   other: "Other"
+  other: "Other"
 }
 
 module.exports = async function getArmSummarys(req, res) {
@@ -30,15 +30,12 @@ module.exports = async function getArmSummarys(req, res) {
       where: {
         [Op.or]: [
           { pilot_id: { [Op.not]: null } },
-          { mission_uuid: { [Op.not]: null } },
           { drone_code: { [Op.not]: null } },
           { drone_uin: { [Op.not]: null } },
           { drone_uuid: { [Op.not]: null } },
           { plan: { [Op.not]: null } },
           { mission_height: { [Op.not]: null } },
           { boundary_name: { [Op.not]: null } },
-          { created_at: { [Op.not]: null } },
-          { edited_at: { [Op.not]: null } },
           { pilot_name: { [Op.not]: null } },
           { mission_started_at: { [Op.not]: null } },
           { mission_ended_at: { [Op.not]: null } },
@@ -57,32 +54,40 @@ module.exports = async function getArmSummarys(req, res) {
           { other: { [Op.not]: null } },
           { units: { [Op.not]: null } },
           { warnings: { [Op.not]: null } },
-        ],
-      },      
+          { createdAt: { [Op.not]: null } },
+          { updatedAt: { [Op.not]: null } },
+        ]
+      }
     });
 
-const reducedData = missionSummaries.map((data) => {
+    const reducedData = missionSummaries.map((data) => {
 
-  return Object.entries(data.dataValues).reduce((acc, [currKey, currValue]) => {
- 
-  
-    if ((currValue || typeof currValue === "string") && fieldMap[currKey]) {
-        return { ...acc, name: fieldMap[currKey] , units: data.dataValues.units , value: data.dataValues[currKey]};
-      
-    }
-    if(currKey === "other" && ((currValue || typeof currValue === "string"))){
-       if(!isNaN(data.dataValues.other)){
-        return { ...acc, name: "Other" , units: data.dataValues.units , value: parseFloat(data.dataValues.other)};
-       } else {
-        return { ...acc, name: "Other" , units: data.dataValues.units , value: data.dataValues.other};
-       }
-      
-    }
-    return acc;
-  }, {});
-});
+      function filterNonNullFields(obj) {
+        const filteredObj = {};
+        for (const key in obj) {
+          if (obj[key] !== null) {
+            filteredObj[key] = obj[key];
+          }
+        }
+        return filteredObj;
+      }
+      return filterNonNullFields(data.dataValues);
+    }).map((data) => {
+      const filteredObj = {};
+      let valKey = "";
+      for (const key in data) {
+        if (fieldMap[key]) {
+          filteredObj["name"] = fieldMap[key];
+          valKey = key;
+        }
+      }
+      filteredObj["value"] = data[valKey];
+      filteredObj.units = data.units;
+      return filteredObj;
 
-    res.json({arm_summary: [{parameters: reducedData.filter(data => Object.keys(data).length)}], length: reducedData.filter(data => Object.keys(data).length).length});
+    });
+
+    return res.json({ arm_summary: [{ parameters: reducedData }] });
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Internal server error" });
