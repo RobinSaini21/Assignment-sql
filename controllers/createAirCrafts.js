@@ -18,7 +18,7 @@ const fieldMap = {
   Boundary: 'boundary',
   Plan: 'plan',
   Warnings: 'warnings',
-  'Arm Cycle': 'arm_cycle'
+  'Arm Cycle': 'arm_cycle',
 }
 
 

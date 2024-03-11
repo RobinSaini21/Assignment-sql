@@ -21,7 +21,7 @@ const fieldMap = {
   plan: 'Plan',
   warnings: 'Warnings',
   arm_cycle: 'Arm Cycle',
-
+   other: "Other"
 }
 
 module.exports = async function getArmSummarys(req, res) {
@@ -61,28 +61,28 @@ module.exports = async function getArmSummarys(req, res) {
       },      
     });
 
-  const reducedData = missionSummaries.map((data) => {
+const reducedData = missionSummaries.map((data) => {
 
-      return Object.entries(data.dataValues).reduce((acc, [currKey, currValue]) => {
-     
+  return Object.entries(data.dataValues).reduce((acc, [currKey, currValue]) => {
+ 
+  
+    if ((currValue || typeof currValue === "string") && fieldMap[currKey]) {
+        return { ...acc, name: fieldMap[currKey] , units: data.dataValues.units , value: data.dataValues[currKey]};
       
-        if ((currValue || typeof currValue === "string") && fieldMap[currKey]) {
-            return { ...acc, name: fieldMap[currKey] , units: data.dataValues.units , value: data.dataValues[currKey]};
-          
-        }
-        if(currKey === "other" && currValue){
-           if(!isNaN(currValue)){
-            return { ...acc, name: "Other" , units: data.dataValues.units , value: parseFloat(data.dataValues[currKey])};
-           } else {
-            return { ...acc, name: "Other" , units: data.dataValues.units , value: data.dataValues[currKey]};
-           }
-          
-        }
-        return acc;
-      }, {});
-    });
+    }
+    if(currKey === "other" && ((currValue || typeof currValue === "string"))){
+       if(!isNaN(data.dataValues.other)){
+        return { ...acc, name: "Other" , units: data.dataValues.units , value: parseFloat(data.dataValues.other)};
+       } else {
+        return { ...acc, name: "Other" , units: data.dataValues.units , value: data.dataValues.other};
+       }
+      
+    }
+    return acc;
+  }, {});
+});
 
-    res.json({arm_summary: [{parameters: reducedData.filter(data => Object.keys(data).length)}]});
+    res.json({arm_summary: [{parameters: reducedData.filter(data => Object.keys(data).length)}], length: reducedData.filter(data => Object.keys(data).length).length});
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Internal server error" });
